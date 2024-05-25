@@ -29,10 +29,26 @@ bullJobStates.forEach((state) => {
   jobGauge[state] = newGauge;
   register.registerMetric(newGauge);
 });
-console.log(JSON.parse(process.env.REDIS_NODES))
+// process.env.REDIS_NODES = '[{"host":"ss-staging-redis-cluster.fbh2lo.clustercfg.use1.cache.amazonaws.com","port":"6379"}]'
+console.log(JSON.parse(process.env.REDIS_NODES));
+
+let clusterOpts = config.get("redis.bullmq.options");
+// only for local development
+if (process.env.LAPTOP) {
+  clusterOpts = {
+    ...clusterOpts,
+    natMap: {
+      "127.0.0.1:6375": { host: process.env.LAPTOP, port: 6375 },
+      "127.0.0.1:6380": { host: process.env.LAPTOP, port: 6380 },
+      "127.0.0.1:6381": { host: process.env.LAPTOP, port: 6381 },
+    },
+  };
+  console.log({ natMap: clusterOpts.natMap });
+}
+
 const connection = new Redis.Cluster(
   JSON.parse(process.env.REDIS_NODES) ?? config.get("redis.bullmq.nodes"),
-  config.get("redis.bullmq.options")
+  clusterOpts
 );
 const bullmqWorkerOptions = {
   connection,
@@ -48,7 +64,8 @@ const HOST = process.env.HOST ?? "0.0.0.0";
 const PORT = Number.parseInt(process.env.PORT ?? 3000);
 
 const app = fastify({ logger: true });
-const queueNames = process.env.QUEUE_NAMES.split(",") ?? config.get("queueNames");
+const queueNames =
+  process.env.QUEUE_NAMES?.split(",") ?? config.get("queueNames");
 
 app.get("/metrics", async (_, res) => {
   queueNames.forEach(async (queue) => {
