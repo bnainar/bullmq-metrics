@@ -13,8 +13,6 @@ spec:
       labels:
         app: bullmq-metrics
     spec:
-      # remove hostNetwork
-      hostNetwork: true 
       containers:
         - name: bullmq-metrics
           # image: 713859105457.dkr.ecr.us-east-1.amazonaws.com/bullmq-metrics:latest
